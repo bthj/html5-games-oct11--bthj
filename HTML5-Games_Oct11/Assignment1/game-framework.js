@@ -1,0 +1,229 @@
+var GF = function() {
+	var mainScreen = null, // main screen is the place where we will render our
+							// game, it will be independent from the
+							// fpsContainer
+	states = {}, // we will store currently pressed keys in the states object
+	frameCount = 0, fps = 0, lastTime = +(new Date()), fpsContainer = null,
+	ctrlObj = null, // a controllable scene object
+	ctrlObjTop = 100, ctrlObjLeft = 100, // top and left CSS attributes of the ctrl object
+	lastMoveTime = +(new Date()), 
+	timeStep = 10, //how many millisecs to elapse between moves, to decouple speed from frame rate 
+	stepSize = 5, // how many pixels to move object at each step with arrow keys
+	lastX = 0, lastY = 0; // position of mouse when element was moved last 
+
+	var MeasureFPS = function() {
+		var newTime = +(new Date());
+		var diffTime = ~~((newTime - lastTime));
+
+		if (diffTime >= 1000) {
+			fps = frameCount;
+			frameCount = 0;
+			lastTime = newTime;
+		}
+
+		fpsContainer.innerHTML = 'FPS: ' + fps;
+		frameCount++;
+	};
+
+	// main function, called each frame
+	var mainLoop = function() {
+		
+		MeasureFPS();
+		
+		moveControllableObject();
+
+		loop(mainLoop);
+	};
+
+	var loop = (function() {
+		return window.requestAnimationFrame
+				|| window.webkitRequestAnimationFrame
+				|| window.mozRequestAnimationFrame
+				|| window.oRequestAnimationFrame
+				|| window.msRequestAnimationFrame
+				|| function(/* function */callback, /* DOMElement */element) {
+					window.setTimeout(callback, 1000 / 60);
+				};
+	})();
+	
+	// cross browser event listening
+	var addEventListener = function( element, event, callee ) {
+		if( element.addEventListener ) {
+			element.addEventListener( event, callee, false );	
+		} else if( element.attachEvent ) { // IE event attachment
+			element.attachEvent( event, callee );	
+		}
+	};
+	
+	// mouse coordinates
+	function getCursorPosition(e) { // from http://diveintohtml5.info/canvas.html
+		var x;
+		var y;
+		if (e.pageX != undefined && e.pageY != undefined) {
+			x = e.pageX;
+			y = e.pageY;
+		} else {
+			x = e.clientX + document.body.scrollLeft +
+				document.documentElement.scrollLeft;
+			y = e.clientY + document.body.scrollTop +
+				document.documentElement.scrollTop;
+		}
+		return { x: x, y: y };
+	}
+	
+	// screen width polyfill
+	var getScreenWidth = function() {
+		return window.innerWidth
+				|| document.body.clientWidth
+				|| document.documentElement.clientWidth;
+	};
+	var getScreenHeight = function() {
+		return window.innerHeight
+				|| document.body.clientHeight
+				|| document.documentElement.clientHeight;
+	};
+	
+	// let's prevent the object from being moved off screen
+	function isObjMoveWithinHorizontalBorder( obj, top ) {
+		return top > 0 && top + parseInt(obj.style.height, 10) < getScreenHeight();
+	}
+	function isObjMoveWithinVerticalBorder( obj, left ) {
+		return left > 0 && left + parseInt(obj.style.width, 10) < getScreenWidth();
+	}
+
+	var start = function() {
+
+		// add the listener to the main, window object, and update the states
+		addEventListener( window, 'keydown', function(event) {
+			if (event.keyCode === 37) {
+				states.left = true;
+			} else if (event.keyCode === 38) {
+				states.up = true;
+			} else if (event.keyCode === 39) {
+				states.right = true;
+			} else if (event.keyCode === 40) {
+				states.down = true;
+			}
+		} );
+
+		// if the key will be released, change the states object
+		addEventListener( window, 'keyup', function(event) {
+			if (event.keyCode === 37) {
+				states.left = false;
+			} else if (event.keyCode === 38) {
+				states.up = false;
+			} else if (event.keyCode === 39) {
+				states.right = false;
+			} else if (event.keyCode === 40) {
+				states.down = false;
+			}
+		} );
+		
+		// if mouse button is pressed on the controllable object, lets move the object with the mouse 
+		addEventListener( window, 'mousemove', function( event ){
+			if( states.ctrlObjMouseDown ) {
+				var cursorPos = getCursorPosition( event );
+				var left = ctrlObjLeft + (cursorPos.x - lastX);
+				var top = ctrlObjTop + (cursorPos.y - lastY);
+
+				if( isObjMoveWithinVerticalBorder( ctrlObj, left) ) {
+					ctrlObj.style.left = left + 'px';	
+				}
+				if( isObjMoveWithinHorizontalBorder( ctrlObj, top) ) {
+					ctrlObj.style.top = top + 'px';	
+				}
+
+				ctrlObjLeft = left;
+				ctrlObjTop = top;
+				lastX = cursorPos.x;
+				lastY = cursorPos.y;
+			}
+		});
+		
+		// let's clear the mouse down state wherever the cursor is when releasing the button 
+		addEventListener( window, 'mouseup', function(){
+			states.ctrlObjMouseDown = false;
+		});
+
+
+		
+		fpsContainer = document.createElement('div');
+		document.body.appendChild(fpsContainer);
+		
+		// create main screen
+		mainScreen = document.createElement('div');
+		document.body.appendChild(mainScreen);
+		
+		loop(mainLoop);
+	};
+	
+	
+	/*** Assignment 1 ***/
+	var moveControllableObject = function() {
+		var currentTime = +(new Date());
+		var diffTime = ~~((currentTime - lastMoveTime));
+		if( ctrlObj && diffTime >= timeStep ) {
+			if (states.left) {
+				var left = ctrlObjLeft - stepSize;
+				if( left > 0 ) {
+					ctrlObj.style.left = left + 'px';
+					ctrlObjLeft = left;
+				}
+			} else if (states.right) {
+				var left = ctrlObjLeft + stepSize;
+				if( left + parseInt(ctrlObj.style.width, 10) < getScreenWidth() ) {
+					ctrlObj.style.left = left + 'px';
+					ctrlObjLeft = left;
+				}
+			}
+			if (states.up) {
+				var top = ctrlObjTop - stepSize;
+				if( top > 0 ) {
+					ctrlObj.style.top = top + 'px';
+					ctrlObjTop = top;
+				}
+			} else if (states.down) {
+				var top = ctrlObjTop + stepSize;
+				if( top + parseInt(ctrlObj.style.height, 10) < getScreenHeight() ) {
+					ctrlObj.style.top = top + 'px';
+					ctrlObjTop = top;
+				}
+			}
+			lastMoveTime = currentTime;
+		}
+	};
+	
+	var createControllableObject = function() {
+		ctrlObj = document.createElement('span');
+		ctrlObj.style.position = 'absolute';
+		ctrlObj.style.height = '100px';
+		ctrlObj.style.width = '100px';
+		ctrlObj.style.top = ctrlObjTop + 'px';
+		ctrlObj.style.left = ctrlObjLeft + 'px';
+		ctrlObj.style.backgroundColor = '#0cf';
+		
+		addEventListener( ctrlObj, 'mousedown', function( event ){
+			event.preventDefault(); // to prevent browsers element drag feature
+			var cursorPos = getCursorPosition( event );
+			lastX = cursorPos.x;
+			lastY = cursorPos.y;
+			states.ctrlObjMouseDown = true;
+		});
+		
+		mainScreen.appendChild( ctrlObj );
+	};
+	
+	var removeControllableObject = function() {
+		mainScreen.removeChild( ctrlObj );
+		ctrlObj = null; // TODO: necessary?
+	};
+
+	
+	
+	//our GameFramework returns public API visible from outside scope
+	return {
+		start : start,
+		createControllableObject : createControllableObject,
+		removeControllableObject : removeControllableObject
+	};
+};

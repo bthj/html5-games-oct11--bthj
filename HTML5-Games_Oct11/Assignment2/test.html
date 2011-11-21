@@ -1,0 +1,27 @@
+<html>  
+   <head>  
+       <style>  
+         
+           @-moz-keyframes move {  
+               0% { background-position: 0 0; }  
+               24.99% { background-position: 0 0; }  
+               25% { background-position: 0 -90px; }  
+               49.99% { background-position: 0 -90px; }  
+               50% { background-position: 0 -180px; }  
+               74.99% { background-position: 0 -180px; }  
+               75% { background-position: 0 -270px; }  
+               99.99% { background-position: 0 -270px; }  
+               100% { background-position: 0 0; }  
+           }  
+           .player {  
+               width: 80px;  
+               height: 90px;  
+               background-image: url('odys.png');  
+               -moz-animation: move 0.5s linear 0s infinite;  
+           }  
+       </style>  
+   </head>  
+   <body>  
+       <div class="player"></div>  
+   </body>  
+</html>  

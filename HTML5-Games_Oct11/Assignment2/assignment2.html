@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<style>  
+	
+		#player {  
+			border: 1px solid #bada55;    
+			width: 80px;    
+			height: 90px;    
+			position: absolute;
+		}
+		
+		#platform {    
+			border: 1px solid #000;
+			box-shadow: 1px 1px 3px 1px #000;
+			position: absolute;    
+		}
+	</style>  
+</head>
+<body>
+
+	<script type="text/javascript">
+		var GF = function() {
+			var mainScreen = null, // main screen is the place where we will render our
+									// game, it will be independent from the
+									// fpsContainer
+			states = {}, // we will store currently pressed keys in the states object
+			frameCount = 0, 
+			fps = 0, 
+			lastTime = +(new Date()), 
+			fpsContainer = null,
+			
+			lastAnimChangeTime = +(new Date()), 
+			timeStep = 150, //how many millisecs to elapse between moves, to decouple speed from frame rate 
+			stepSize = 10, // how many pixels to move object at each step with arrow keys
+
+			
+			player = null,         //player element  
+			playerPosition = {    //player position  
+				x: 100,  
+				y: 300,
+				width: 80,    
+				height: 90
+			},  
+			transformSupport = null, //method of moving player
+			animationSupport = null, // can we use CSS3 for animation
+
+			platform = null,
+			platformPosition = {  //platform position & size    
+				x: 200,
+				y: 240,
+				width: 150,    
+				height: 150    
+			}
+			
+			// animation related members
+			frames = 3,
+			actualFrame = 0
+			image = document.createElement('img'),
+			image.src = 'odys.png',
+			imageStyle = image.style;
+			
+			var constructAnimationClass = function(prefix, animationName, frames, height){  
+	
+				var animationClass = "@" + prefix + "keyframes "+ animationName +" {\n",  
+					step = 100/(frames+1);  
+				for (var i = 0; i < frames+1; i++) {  
+					animationClass += ~~((step*i)*100) / 100 + "% { " + 'background-position: 0 -' + i * height + 'px; }\n';  
+					animationClass += ~~((step*(i+1)-0.01)*100)/100 + "% { " + 'background-position: 0 -' + i * height + 'px; }\n';  
+				}
+
+				return animationClass += '100'+ "% { " + prefix + 'background-position: 0 0 }\n}';
+			};
+
+			
+			
+			/////// physics /////
+			
+		    var isJumping = false,    
+	        isFalling = false,
+	        jumpSpeed = 0,    
+	        fallSpeed = 0,
+	        groundY = 300,
+	    
+			jump = function() {    
+				if (!isJumping && !isFalling) {    
+					fallSpeed = 0;    
+					isJumping = true;    
+					jumpSpeed = 20;
+				}
+			},
+	    
+			checkJump = function() {
+				if( isJumping ) {
+					playerPosition.y -= jumpSpeed;    
+					jumpSpeed--;
+					
+					if (jumpSpeed == 0) {    
+						isJumping = false;    
+						isFalling = true;    
+						fallSpeed = 1;
+					}
+				}
+			},
+	    
+			fallStop = function(){    
+				isFalling = false;    
+				fallSpeed = 0;
+			},
+	    
+			checkFall = function(){
+				if( isFalling ) {
+					if (playerPosition.y < groundY ) {
+ 						if( playerPosition.y + fallSpeed > groundY ) {
+ 							playerPosition.y = groundY;
+ 						} else {
+							playerPosition.y += fallSpeed;	
+ 						}
+						fallSpeed++;    
+					} else {
+						fallStop();    
+					}					
+				}
+			};
+			
+			/////// physics / end /////
+			
+
+			
+			var MeasureFPS = function() {
+				var newTime = +(new Date());
+				var diffTime = ~~((newTime - lastTime));
+	
+				if (diffTime >= 1000) {
+					fps = frameCount;
+					frameCount = 0;
+					lastTime = newTime;
+				}
+	
+				fpsContainer.innerHTML = 'FPS: ' + fps;
+				frameCount++;
+			};
+			
+			
+			
+			var detectPropertyPrefix = function(property) {  
+				var prefixes = ['Moz', 'Ms', 'Webkit', 'O'];
+				for (var i=0, j=prefixes.length; i < j; i++) {  
+					if (typeof document.body.style[prefixes[i]+property] !== 'undefined') {
+						return prefixes[i]+property;
+					}
+				}  
+				return false;  
+			};
+			var getCSSPropertyPrefix = function(property) {
+				var prefixes = {'Moz':'-moz-', 'Ms':'-ms-', 'Webkit':'-webkit-', 'O':'-o-'};
+				for( var key in prefixes ) {
+					if (typeof document.body.style[key+property] !== 'undefined') {
+						return prefixes[key];
+					}
+				}
+				return null;
+			}
+			
+			
+			
+			var moveObject = function(object, x, y) {
+					
+				if (transformSupport === false) {  
+					object.style.top = y + "px";  
+					object.style.left = x + "px";  
+				} else {  
+					object.style[transformSupport] = 'translate(' + x + 'px, ' + y + 'px)';  
+				}
+			};
+			
+			var animateObject = function( isMoving ) {
+				var currentTime = +(new Date());
+				var diffTime = ~~((currentTime - lastAnimChangeTime));
+			
+				// let's animate the character if any movement is going on
+				if( isMoving ) {
+					if( animationSupport ) {
+						player.style[animationSupport] =  "move 0.5s linear 0s infinite";
+						lastAnimChangeTime = currentTime;
+					} else if( diffTime >= timeStep ) {
+						imageStyle.top = -1*playerPosition.height * actualFrame + 'px';     
+						if (actualFrame == frames) {  
+							actualFrame = 0;  
+						} else {  
+							actualFrame++;  
+						}
+						lastAnimChangeTime = currentTime;
+					}
+				} else if( animationSupport && diffTime >= timeStep ) {
+					player.style[animationSupport] =  "none";
+					lastAnimChangeTime = currentTime;			
+				}
+			}
+			
+	
+
+			// cross browser event listening
+			var addEventListener = function( element, event, callee ) {
+				if( element.addEventListener ) {
+					element.addEventListener( event, callee, false );	
+				} else if( element.attachEvent ) { // IE event attachment
+					element.attachEvent( event, callee );	
+				}
+			};
+			
+
+			var checkCollision = function(object1, object2) { //return 'true' if colliding, 'false' if not.  
+				
+				if (!(    
+					(object1.y > object2.y+object2.height) ||    // 1 hits 2 from under
+					(object1.y+object1.height < object2.y) ||    // 1 hits 2 from top
+					(object1.x > object2.x+object2.width) ||     // 1 hits 2 from right
+					(object1.x+object1.width < object2.x)        // 1 hits 2 from left
+				)){
+
+					return true;    
+				}    
+				return false;    
+			}
+			
+			
+			var loop = (function() {
+				return window.requestAnimationFrame
+						|| window.webkitRequestAnimationFrame
+						|| window.mozRequestAnimationFrame
+						|| window.oRequestAnimationFrame
+						|| window.msRequestAnimationFrame
+						|| function(/* function */callback, /* DOMElement */element) {
+							window.setTimeout(callback, 1000 / 60);
+						};
+			})();
+			
+			
+			
+			// main function, called each frame
+			var mainLoop = function() {
+				
+//				MeasureFPS();
+
+
+				//update player position on each frame  
+				if (states.left) {  
+					playerPosition.x -= stepSize;  
+				} else if (states.right) {  
+					playerPosition.x += stepSize;
+				}
+				if (states.up) {
+					jump();
+				}
+				
+				
+				checkJump();    
+				checkFall();
+						        
+		        
+				if (checkCollision(playerPosition, platformPosition)) { //if objects collide, change color of player to red        
+					if( isFalling ) {
+						if( playerPosition.y + playerPosition.height > platformPosition.y ) {
+							playerPosition.y = platformPosition.y - playerPosition.height;
+						}
+						fallStop();
+					} else if( playerPosition.y + playerPosition.height > platformPosition.y ) {
+						// player is below the platform, let's prevent him in going through it
+						if( states.left ) {
+							playerPosition.x = platformPosition.x + platformPosition.width;
+						} else if( states.right ) {
+							playerPosition.x = platformPosition.x - playerPosition.width;
+						}						
+					}
+				} else if( playerPosition.y < groundY && false == isJumping ) {
+					// let's make sure the player falls when going off the edge of a platform
+					isFalling = true;
+				}
+			
+					
+				moveObject( player, playerPosition.x, playerPosition.y );
+					
+				animateObject( isJumping || isFalling || states.left || states.right );	
+				
+				
+				loop(mainLoop);
+			};
+			
+			
+	
+			var start = function() {
+				
+				//features detection  
+				transformSupport = detectPropertyPrefix('Transform');
+				animationSupport = detectPropertyPrefix('Animation');
+				
+				// create main screen
+				mainScreen = document.createElement('div');
+				document.body.appendChild(mainScreen);
+				
+				
+				//create player  
+				player = document.body.appendChild(document.createElement('div'));  
+				player.id = 'player';
+				
+				
+				//create platform    
+				platform = document.body.appendChild(document.createElement('div'));    
+				platform.id = 'platform';    
+				platform.style.width = platformPosition.width + "px";    
+				platform.style.height = platformPosition.height + "px";    
+				moveObject(platform, platformPosition.x, platformPosition.y);    
+				
+				
+				
+				if( animationSupport ) {
+					var propertyPrefix = getCSSPropertyPrefix( 'Animation' );
+					var animStyle = document.createElement('style');  
+					animStyle.innerHTML = constructAnimationClass(propertyPrefix, 'move', 3, 90);  
+					document.getElementsByTagName('head')[0].appendChild(animStyle);  
+					player.style.backgroundImage = "url('odys.png')"; 
+				} else { //  div with overflow:hidden fallback
+					player.appendChild( image );
+					canvasStyle = player.style;
+					imageStyle.position = "absolute";
+  
+					canvasStyle.overflow = "hidden";
+					canvasStyle.width = playerPosition.width + 'px';  
+					canvasStyle.height = playerPosition.height; + 'px';
+					imageStyle.top = 0;  
+					imageStyle.left = 0;  
+				}
+				
+				  
+
+				// add the listener to the main, window object, and update the states
+				addEventListener( window, 'keydown', function(event) {
+					if (event.keyCode === 37) {
+						states.left = true;
+					} else if (event.keyCode === 38) {
+						states.up = true;
+					} else if (event.keyCode === 39) {
+						states.right = true;
+					} else if (event.keyCode === 40) {
+						states.down = true;
+					}
+				} );
+	
+				// if the key will be released, change the states object
+				addEventListener( window, 'keyup', function(event) {
+					if (event.keyCode === 37) {
+						states.left = false;// 
+					} else if (event.keyCode === 38) {
+						states.up = false;
+					} else if (event.keyCode === 39) {
+						states.right = false;
+					} else if (event.keyCode === 40) {
+						states.down = false;
+					}
+				} );
+
+				
+				loop(mainLoop);
+			};
+
+			
+			//our GameFramework returns public API visible from outside scope
+			return {
+				start : start
+			};
+		};
+	
+	
+		
+		var game = new GF();
+		game.start();
+
+	</script>
+	
+</body>
+
+</html>

@@ -1,0 +1,102 @@
+<html>    
+    <head>    
+        <style>    
+            #player {    
+                border: 4px solid #bada55;    
+                width: 50px;    
+                height: 50px;    
+                box-shadow: 1px 1px 30px 4px #000;    
+                border-radius: 25px;    
+            }    
+        </style>    
+    </head>    
+    <body>    
+        <div id="player"></div>    
+    <script>    
+    player = document.getElementById('player');    
+        
+    var playerPosition = {    
+        x: 100,     
+        y: 300    
+    };    
+        
+    var isJumping = false,    
+        isFalling = false,    
+        jumpSpeed = 0,    
+        fallSpeed = 0,    
+    
+    jump = function() {    
+        if (!isJumping && !isFalling) {    
+            fallSpeed = 0;    
+            isJumping = true;    
+            jumpSpeed = 20;
+        }    
+    },    
+    
+    checkJump = function() {
+        playerPosition.y -= jumpSpeed;    
+        jumpSpeed--;    
+        if (jumpSpeed == 0) {    
+            isJumping = false;    
+            isFalling = true;    
+            fallSpeed = 1;    
+        }    
+    
+    },    
+    
+    fallStop = function(){    
+        isFalling = false;    
+        fallSpeed = 0;    
+        jump();    
+    },    
+    
+    checkFall = function(){    
+        if (playerPosition.y < 300) {    
+            playerPosition.y += fallSpeed;    
+            fallSpeed++;    
+        } else {    
+            fallStop();    
+        }    
+    };
+    
+    var detectPropertyPrefix = function(property) {    
+       var prefixes = ['Moz', 'Ms', 'Webkit', 'O'];    
+       for (var i=0, j=prefixes.length; i < j; i++) {    
+           if (typeof document.body.style[prefixes[i]+property] !== 'undefined') {    
+               return prefixes[i]+property;    
+           }    
+       }        
+       return false;        
+    };    
+        
+    var moveObject = function(object, x, y) {     
+       var transformSupport =  detectPropertyPrefix('Transform');      
+       if (transformSupport === false) {      
+           object.style.top = y + "px";      
+           object.style.left = x + "px";      
+       } else {      
+           object.style[transformSupport] = 'translate(' + x + 'px, ' + y + 'px)';      
+       }      
+    }    
+    
+    var loop = (function () {    
+      return window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.mozRequestAnimationFrame || window.oRequestAnimationFrame || window.msRequestAnimationFrame ||    
+      function ( /* function */ callback, /* DOMElement */ element) {    
+        window.setTimeout(callback, 1000 / 60);    
+      };    
+    })();    
+    
+    
+    var mainLoop = function() {    
+        checkJump();    
+        checkFall();    
+            
+        moveObject(player, playerPosition.x, playerPosition.y);    
+        loop(mainLoop);    
+    }    
+    jump();    
+    mainLoop();    
+        
+    </script>    
+    </body>    
+</html>  
