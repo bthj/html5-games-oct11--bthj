@@ -56,7 +56,7 @@
 			
 			// animation related members
 			frames = 3,
-			actualFrame = 0
+			actualFrame = 0,
 			image = document.createElement('img'),
 			image.src = 'odys.png',
 			imageStyle = image.style;
@@ -161,7 +161,7 @@
 					}
 				}
 				return null;
-			}
+			};
 			
 			
 			
@@ -197,7 +197,7 @@
 					player.style[animationSupport] =  "none";
 					lastAnimChangeTime = currentTime;			
 				}
-			}
+			};
 			
 	
 
@@ -223,7 +223,7 @@
 					return true;    
 				}    
 				return false;    
-			}
+			};
 			
 			
 			var loop = (function() {
@@ -260,7 +260,7 @@
 				checkFall();
 						        
 		        
-				if (checkCollision(playerPosition, platformPosition)) { //if objects collide, change color of player to red        
+				if (checkCollision(playerPosition, platformPosition)) {        
 					if( isFalling ) {
 						if( playerPosition.y + playerPosition.height > platformPosition.y ) {
 							playerPosition.y = platformPosition.y - playerPosition.height;
@@ -272,7 +272,7 @@
 							playerPosition.x = platformPosition.x + platformPosition.width;
 						} else if( states.right ) {
 							playerPosition.x = platformPosition.x - playerPosition.width;
-						}						
+						}			
 					}
 				} else if( playerPosition.y < groundY && false == isJumping ) {
 					// let's make sure the player falls when going off the edge of a platform
@@ -282,7 +282,7 @@
 					
 				moveObject( player, playerPosition.x, playerPosition.y );
 					
-				animateObject( isJumping || isFalling || states.left || states.right );	
+				animateObject( isJumping || isFalling || states.left || states.right );
 				
 				
 				loop(mainLoop);

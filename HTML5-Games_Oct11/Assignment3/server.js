@@ -3,9 +3,12 @@ var http = require("http").createServer(handler),
 url = require("url"), 
 path = require("path"), 
 qs = require("querystring"), 
-fs = require("fs"), 
-boss = true, 
-lastPosition = {};
+fs = require("fs"),
+lastPosition = {},
+defaultPlayerPosition = {
+	x: 100,  
+	y: 300
+};
 
 http.listen(1337);
 
@@ -36,26 +39,28 @@ function handler(request, response) {
 		filename += 'index.html';
 
 	} else if (uri.indexOf('/hello/') !== -1) {
-
+		
+		var player = qs.parse(url.parse(request.url).query);
+		lastPosition[player.id] = {
+			x : defaultPlayerPosition.x,
+			y : defaultPlayerPosition.y
+		};
+		
 		response.writeHeader(200, {
 			"Content-Type" : "text/json"
 		});
-		response.write(JSON.stringify({
-			daBoss : boss
-		}));
+		response.write(JSON.stringify( lastPosition ));
 
 		response.end();
-
-		boss = false;
 
 	} else if (uri.indexOf('/move/') !== -1) {
 
 		var position = qs.parse(url.parse(request.url).query);
 
-		lastPosition = {
-			x : position.x,
-			y : position.y
-		};
+		if( lastPosition[position.id] ) {
+			lastPosition[position.id].x = position.x;
+			lastPosition[position.id].y = position.y;			
+		}
 
 		response.writeHeader(200, {
 			"Content-Type" : "text/json"
@@ -66,23 +71,24 @@ function handler(request, response) {
 		response.end();
 
 	} else if (uri.indexOf('/bye/') !== -1) {
+		
+		var player = qs.parse(url.parse(request.url).query);
+		
+		delete lastPosition[player.id];
+		console.log( player.id + ' exiting.' );
 
 		response.writeHeader(200, {
 			"Content-Type" : "text/json"
 		});
 		response.end();
-		boss = true;
 
 	} else if (uri.indexOf('/get/') !== -1) {
 
 		response.writeHeader(200, {
 			"Content-Type" : "text/json"
 		});
-		response.write(JSON.stringify({
-			x : lastPosition.x,
-			y : lastPosition.y
-		}));
 
+		response.write(JSON.stringify( lastPosition ));		
 		response.end();
 	}
 
