@@ -63,6 +63,7 @@ var GF = function() {
 	};
 	
 //	var socket = io.connect('http://localhost:1337/');
+	var socket = new EasyWebSocket("ws://bthj.is/HTML5-Games_Oct11");
 	
 	
 	// animation related members
@@ -260,9 +261,11 @@ var GF = function() {
 		
 		checkJump();    
 		checkFall();
-		
-		playerIsMoving[playerId] = isJumping || isFalling || states.left || states.right;
 
+		
+		var wasMoving = playerIsMoving[playerId];
+		playerIsMoving[playerId] = isJumping || isFalling || states.left || states.right;
+		
 		
 		var thisPlayer = playerPositions[playerId];
 		if (checkCollision(thisPlayer, platformPosition)) {        
@@ -283,6 +286,7 @@ var GF = function() {
 			// let's make sure the player falls when going off the edge of a platform
 			isFalling = true;
 		}
+
 		
 		for( var oneId in playerPositions ) {
 			var onePlayer = playerPositions[oneId];
@@ -307,35 +311,55 @@ var GF = function() {
 		}
 		
 		loop(mainLoop);
+		
+		if( wasMoving || playerIsMoving[playerId] ) {  // so all clients will stop animating the sprite
+			/*
+			 * sending here via socket doesn't seem to be asynchronous and affects the loop,
+			 * so propbably it's better to do this via setInterval()
+			 */
+			sendMoves();
+		}
 	};
 	
 
 	var sendMoves = function() {
 
-		Connect("GET", "/move/", {
+		socket.send({
 			id : playerId,
 			x : playerPositions[playerId].x,
 			y : playerPositions[playerId].y
 		});
-/*
-		socket.emit('sendMoves', {
-			x : playerPosition.x,
-			y : playerPosition.y
-		});
-*/
 	};
-
-	var getMoves = function(callback) {
-		Connect("GET", "/get/", {}, callback);
+	
+	socket.onmessage = function(event) {
+		if( event.data.id != playerId ) {
+alert( event.data.bye );
+			if( event.data.bye ) {
+				mainScreen.removeChild( players[event.data.id] );
+				delete playerPositions[event.data.id];
+			} else if( ! playerPositions[event.data.id] ) {
+				createPlayer( event.data.id, {x: event.data.x, y: event.data.y} );
+				sendMoves();
+			}
+			if( playerPositions[event.data.id].x != event.data.x || 
+					playerPositions[event.data.id].y != event.data.y ) {
+				playerIsMoving[event.data.id] = true;
+			} else {
+				playerIsMoving[event.data.id] = false;
+			}
+			playerPositions[event.data.id].x = event.data.x;
+			playerPositions[event.data.id].y = event.data.y;
+		}
 	};
+	
 
 	
 	var createPlayer = function( oneId, onePos ) {
 		lastAnimChangeTime[oneId] = +(new Date());
 		
 		playerPositions[oneId] = {};
-		playerPositions[oneId].x = parseInt(onePos.x);
-		playerPositions[oneId].y = parseInt(onePos.y);
+		playerPositions[oneId].x = parseInt(onePos.x, 10);
+		playerPositions[oneId].y = parseInt(onePos.y, 10);
 		playerPositions[oneId].width = defaultPlayerPosition.width;
 		playerPositions[oneId].height = defaultPlayerPosition.height;
 		
@@ -367,13 +391,24 @@ var GF = function() {
 			imageStyle[oneId].left = 0;  
 		}
 	};
-	
+
+
 	var bye = function() {
-		Connect("GET", "/bye/",  { id : playerId });
+		
+		socket.send({
+			id : playerId,
+			bye : "true"
+		});
+		
+		alert( socket );
+		socket.close();
 	};
-	
+
 	
 	var start = function() {
+		
+		loadingMessage = document.body.appendChild(document.createElement('h1'));
+		loadingMessage.innerHTML = "Loading...";
 
 		//features detection  
 		transformSupport = detectPropertyPrefix('Transform');
@@ -392,53 +427,6 @@ var GF = function() {
 		platform.style.width = platformPosition.width + "px";    
 		platform.style.height = platformPosition.height + "px";    
 		moveObject(platform, platformPosition.x, platformPosition.y);
-		
-		
-		playerId = ~~(Math.random() * 87236584);
-
-		Connect("GET", "/hello/", {
-			id : playerId
-		}, function(data) {
-			for( var oneId in data ) {
-				
-				createPlayer( oneId, data[oneId] );					
-			}
-			
-			setInterval(sendMoves, 1000 / 60 );
-
-			setInterval(function() {
-				getMoves(function(data) {
-					for( oneId in data ) {
-						if( oneId != playerId ) { // let's not allow the server to tell where we are, for now
-							if( ! playerPositions[oneId] ) {
-								createPlayer( oneId, data[oneId] );
-							}
-							var inX = parseInt(data[oneId].x);
-							var inY = parseInt(data[oneId].y);
-							if( playerPositions[oneId].x != inX || playerPositions[oneId].y != inY ) {
-								playerIsMoving[oneId] = true;
-							} else {
-								playerIsMoving[oneId] = false;
-							}
-							playerPositions[oneId].x = inX;
-							playerPositions[oneId].y = inY;						
-						}
-					}
-					// let's check if someone has exited - TODO: optimize!
-					for( var oneId in playerPositions ) {
-						if( ! data[oneId] ) {
-							mainScreen.removeChild( players[oneId] );
-							delete playerPositions[oneId];
-						}
-					}
-				});
-			}, 1000 / 60 );
-			
-			
-			loop(mainLoop);
-
-		});
-
 
 		
 		// add the listener to the main, window object, and update the states
@@ -466,12 +454,34 @@ var GF = function() {
 				states.down = false;
 			}
 		} );
-
-
+		
+		addEventListener( window, 'mousedown', function(event) {
+			jump();
+		});
 		
 		window.onbeforeunload = bye;
-		window.onunload = bye;
-
+//		window.onunload = bye;
+//		socket.onclose = bye;
+		
+		
+		playerId = ~~(Math.random() * 87236584);
+		
+		createPlayer( playerId, {x: defaultPlayerPosition.x, y: defaultPlayerPosition.y} );
+		
+		socket.onopen = function() {
+			document.body.removeChild( loadingMessage );
+			sendMoves();
+		};
+		
+/*		
+		setInterval(function(){
+			if( playerIsMoving[playerId] ) {
+				sendMoves();
+			}
+		}, 1000 / 60 );
+*/
+		
+		loop(mainLoop);
 	};
 
 	//our GameFramework returns public API visible from outside scope  
