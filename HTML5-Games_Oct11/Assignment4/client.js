@@ -490,5 +490,7 @@ alert( event.data.bye );
 	};
 };
 
-var game = new GF();
-game.start();
+document.addEventListener("deviceready", function () {  
+	var game = new GF();
+	game.start();
+}, false );
