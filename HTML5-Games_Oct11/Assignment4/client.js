@@ -520,14 +520,14 @@ var GF = function() {
 			navigator.accelerometer.watchAcceleration(  
 				function(tilt){ //success  
 					
-					if( tilt.x > 0.1 ) {
+					if( tilt.x > 1.0 ) {
 						states.right = true;
 						states.left = false;
-						states.stepWeight = (tilt.x - 0.1) * 5;
+						states.stepWeight = (tilt.x - 1.0) * 5;
 					} else if( tilt.x < -0.1 ) {
 						states.left = true;
 						states.right = false;
-						states.stepWeight = Math.abs(tilt.x + 0.1) * 5;
+						states.stepWeight = Math.abs(tilt.x + 1.0) * 5;
 					} else {
 						states.left = false;
 						states.right = false;
@@ -535,7 +535,7 @@ var GF = function() {
 					}
 					
 					if( lastYtilt == null ) lastYtilt = tilt.y;
-					if( Math.abs(lastYtilt - tilt.y) > 0.2 ) {
+					if( Math.abs(lastYtilt - tilt.y) > 2.0 ) {
 						setUpState( true );
 						lastYtilt = tilt.y;
 					} else {
