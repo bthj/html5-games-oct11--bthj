@@ -34,7 +34,8 @@ var GF = function() {
 	frameCount = 0, 
 	fps = 0, 
 	lastTime = +(new Date()), 
-	fpsContainer = null, 
+	fpsContainer = null,
+	accelerometerInfo = null,
 	
 	lastAnimChangeTime = {}, 
 	timeStep = 150, //how many milliseconds to elapse between moves, to decouple speed from frame rate
@@ -333,7 +334,7 @@ var GF = function() {
 	
 	socket.onmessage = function(event) {
 		if( event.data.id != playerId ) {
-alert( event.data.bye );
+
 			if( event.data.bye ) {
 				mainScreen.removeChild( players[event.data.id] );
 				delete playerPositions[event.data.id];
@@ -400,8 +401,12 @@ alert( event.data.bye );
 			bye : "true"
 		});
 		
-		alert( socket );
 		socket.close();
+	};
+	
+	
+	var setAccelerometerInfo = function( info ) {
+		accelerometerInfo.innerHTML = info;
 	};
 
 	
@@ -420,7 +425,11 @@ alert( event.data.bye );
 /*
 		fpsContainer = document.createElement('div');
 		document.body.appendChild(fpsContainer);
-*/		
+*/
+		accelerometerInfo = document.createElement('span');
+		document.body.appendChild(accelerometerInfo);
+		
+		
 		//create platform    
 		platform = document.body.appendChild(document.createElement('div'));    
 		platform.id = 'platform';    
@@ -455,7 +464,10 @@ alert( event.data.bye );
 			}
 		} );
 		
-		addEventListener( window, 'mousedown', function(event) {
+//		addEventListener( window, 'mousedown', function(event) {
+//			jump();
+//		});
+		addEventListener( window, 'click', function(event) {
 			jump();
 		});
 		
@@ -486,11 +498,25 @@ alert( event.data.bye );
 
 	//our GameFramework returns public API visible from outside scope  
 	return {
-		start : start
+		start : start,
+		setAccelerometerInfo : setAccelerometerInfo
 	};
 };
 
 document.addEventListener("deviceready", function () {  
 	var game = new GF();
 	game.start();
+	
+	navigator.accelerometer.watchAcceleration(  
+			function(tilt){ //success  
+
+				game.setAccelerometerInfo( 'X: ' + tilt.x + "Y: " + tilt.y + "Z: " +tilt.z );
+			},  
+			function(){ //failure  
+				alert('NEWFAGS CANT TRIFORCE');  
+			},  
+			{ //options  
+				frequency: 100  
+			});  
+	
 }, false );
