@@ -61,7 +61,9 @@ var GF = function() {
 		y : 240,
 		width : 150,
 		height : 150
-	};
+	}, 
+	// mobile behaviour
+	lastYtilt = null;
 	
 //	var socket = io.connect('http://localhost:1337/');
 	var socket = new EasyWebSocket("ws://bthj.is/HTML5-Games_Oct11");
@@ -251,9 +253,9 @@ var GF = function() {
 		
 		//update player position on each frame  
 		if (states.left) {  
-			playerPositions[playerId].x -= step;  
+			playerPositions[playerId].x -= step * states.stepWeight;  
 		} else if (states.right) {  
-			playerPositions[playerId].x += step;
+			playerPositions[playerId].x += step * states.stepWeight;
 		}
 		if (states.up) {
 			jump();
@@ -281,7 +283,10 @@ var GF = function() {
 					thisPlayer.x = platformPosition.x + platformPosition.width;
 				} else if( states.right ) {
 					thisPlayer.x = platformPosition.x - thisPlayer.width;
-				}			
+				}
+				if( navigator ) {
+					navigator.notification.vibrate(250);
+				}
 			}
 		} else if( thisPlayer.y < groundY && false == isJumping ) {
 			// let's make sure the player falls when going off the edge of a platform
@@ -301,6 +306,9 @@ var GF = function() {
 							onePlayer.x = anotherPlayer.x + anotherPlayer.width + 1;
 						} else if( onePlayer.x + onePlayer.width > anotherPlayer.x ) {
 							onePlayer.x = anotherPlayer.x - onePlayer.width - 1;
+						}
+						if( navigator ) {
+							navigator.notification.vibrate(250);
 						}
 					}
 				}
@@ -421,7 +429,7 @@ var GF = function() {
 	
 
 	
-	var start = function() {
+	var start = function( ) {
 		
 		loadingMessage = document.body.appendChild(document.createElement('h1'));
 		loadingMessage.innerHTML = "Loading...";
@@ -436,10 +444,10 @@ var GF = function() {
 /*
 		fpsContainer = document.createElement('div');
 		document.body.appendChild(fpsContainer);
-
+*/
 		accelerometerInfo = document.createElement('span');
 		document.body.appendChild(accelerometerInfo);
-*/		
+
 		
 		//create platform    
 		platform = document.body.appendChild(document.createElement('div'));    
@@ -453,10 +461,12 @@ var GF = function() {
 		addEventListener( window, 'keydown', function(event) {
 			if (event.keyCode === 37) {
 				states.left = true;
+				states.stepWeight = 1;
 			} else if (event.keyCode === 38) {
 				states.up = true;
 			} else if (event.keyCode === 39) {
 				states.right = true;
+				states.stepWeight = 1;
 			} else if (event.keyCode === 40) {
 				states.down = true;
 			}
@@ -504,6 +514,45 @@ var GF = function() {
 		}, 1000 / 60 );
 */
 		
+		
+		if( navigator ) {
+			
+			navigator.accelerometer.watchAcceleration(  
+				function(tilt){ //success  
+					
+					if( tilt.x > 0.1 ) {
+						states.right = true;
+						states.left = false;
+						states.stepWeight = (tilt.x - 0.1) * 5;
+					} else if( tilt.x < -0.1 ) {
+						states.left = true;
+						states.right = false;
+						states.stepWeight = Math.abs(tilt.x + 0.1) * 5;
+					} else {
+						states.left = false;
+						states.right = false;
+						states.stepWeight = 1;
+					}
+					
+					if( lastYtilt == null ) lastYtilt = tilt.y;
+					if( Math.abs(lastYtilt - tilt.y) > 0.2 ) {
+						setUpState( true );
+						lastYtilt = tilt.y;
+					} else {
+						setUpState( false );
+					}
+					
+//					setAccelerometerInfo( "tilt.y: " + tilt.y + ", <br />lastYtilt: " + lastYtilt + ", <br />stepWeight: " + states.stepWeight );
+				},  
+				function(){ //failure  
+					alert('NEWFAGS CANT TRIFORCE');  
+				},  
+				{ //options  
+					frequency: 100  
+				});
+		}
+		
+		
 		loop(mainLoop);
 	};
 
@@ -521,26 +570,32 @@ document.addEventListener("deviceready", function () {
 	var game = new GF();
 	game.start();
 	
-	var lastYtilt = 0;
+/*
+	var lastYtilt = null;
 	
 	navigator.accelerometer.watchAcceleration(  
 			function(tilt){ //success  
 				
-				if( tilt.x > 2 ) {
-					game.setLeftState( true );
-				} else if( titl.x < -2 ) {
+				if( tilt.x > 0.1 ) {
 					game.setRightState( true );
+					game.setLeftState( false );
+				} else if( tilt.x < -0.1 ) {
+					game.setLeftState( true );
+					game.setRightState( false );
 				} else {
 					game.setLeftState( false );
 					game.setRightState( false );
 				}
 				
-				if( tilt.y > (lastYtilt+2) ) {
+				if( lastYtilt == null ) lastYtilt = tilt.y;
+				if( Math.abs(lastYtilt - tilt.y) > 0.2 ) {
 					game.setUpState( true );
+					lastYtilt = tilt.y;
 				} else {
 					game.setUpState( false );
 				}
-				lastYtilt = tilt.y;
+				
+				game.setAccelerometerInfo( "tilt.y: " + tilt.y + ", <br />lastYtilt: " + lastYtilt );
 
 //				game.setAccelerometerInfo( 'X: ' + tilt.x + "Y: " + tilt.y + "Z: " +tilt.z );
 			},  
@@ -549,6 +604,7 @@ document.addEventListener("deviceready", function () {
 			},  
 			{ //options  
 				frequency: 100  
-			});  
+			});
+*/
 	
 }, false );
