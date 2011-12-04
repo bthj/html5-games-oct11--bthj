@@ -408,6 +408,17 @@ var GF = function() {
 	var setAccelerometerInfo = function( info ) {
 		accelerometerInfo.innerHTML = info;
 	};
+	
+	var setLeftState = function( state ) {
+		states.left = state;
+	};
+	var setRightState = function( state ) {
+		states.right = state;
+	};
+	var setUpState = function( state ) {
+		states.up = state;
+	}
+	
 
 	
 	var start = function() {
@@ -425,10 +436,10 @@ var GF = function() {
 /*
 		fpsContainer = document.createElement('div');
 		document.body.appendChild(fpsContainer);
-*/
+
 		accelerometerInfo = document.createElement('span');
 		document.body.appendChild(accelerometerInfo);
-		
+*/		
 		
 		//create platform    
 		platform = document.body.appendChild(document.createElement('div'));    
@@ -499,7 +510,10 @@ var GF = function() {
 	//our GameFramework returns public API visible from outside scope  
 	return {
 		start : start,
-		setAccelerometerInfo : setAccelerometerInfo
+		setAccelerometerInfo : setAccelerometerInfo,
+		setLeftState : setLeftState,
+		setRightState : setRightState,
+		setUpState : setUpState
 	};
 };
 
@@ -507,10 +521,28 @@ document.addEventListener("deviceready", function () {
 	var game = new GF();
 	game.start();
 	
+	var lastYtilt = 0;
+	
 	navigator.accelerometer.watchAcceleration(  
 			function(tilt){ //success  
+				
+				if( tilt.x > 2 ) {
+					game.setLeftState( true );
+				} else if( titl.x < -2 ) {
+					game.setRightState( true );
+				} else {
+					game.setLeftState( false );
+					game.setRightState( false );
+				}
+				
+				if( tilt.y > (lastYtilt+2) ) {
+					game.setUpState( true );
+				} else {
+					game.setUpState( false );
+				}
+				lastYtilt = tilt.y;
 
-				game.setAccelerometerInfo( 'X: ' + tilt.x + "Y: " + tilt.y + "Z: " +tilt.z );
+//				game.setAccelerometerInfo( 'X: ' + tilt.x + "Y: " + tilt.y + "Z: " +tilt.z );
 			},  
 			function(){ //failure  
 				alert('NEWFAGS CANT TRIFORCE');  
