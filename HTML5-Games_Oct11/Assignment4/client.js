@@ -284,9 +284,9 @@ var GF = function() {
 				} else if( states.right ) {
 					thisPlayer.x = platformPosition.x - thisPlayer.width;
 				}
-				if( navigator ) {
-					navigator.notification.vibrate(250);
-				}
+//				if( navigator ) {
+//					navigator.notification.vibrate(250);
+//				}
 			}
 		} else if( thisPlayer.y < groundY && false == isJumping ) {
 			// let's make sure the player falls when going off the edge of a platform
@@ -307,9 +307,9 @@ var GF = function() {
 						} else if( onePlayer.x + onePlayer.width > anotherPlayer.x ) {
 							onePlayer.x = anotherPlayer.x - onePlayer.width - 1;
 						}
-						if( navigator ) {
-							navigator.notification.vibrate(250);
-						}
+//						if( navigator ) {
+//							navigator.notification.vibrate(250);
+//						}
 					}
 				}
 			}
@@ -567,44 +567,8 @@ var GF = function() {
 };
 
 document.addEventListener("deviceready", function () {  
+	
 	var game = new GF();
 	game.start();
-	
-/*
-	var lastYtilt = null;
-	
-	navigator.accelerometer.watchAcceleration(  
-			function(tilt){ //success  
-				
-				if( tilt.x > 0.1 ) {
-					game.setRightState( true );
-					game.setLeftState( false );
-				} else if( tilt.x < -0.1 ) {
-					game.setLeftState( true );
-					game.setRightState( false );
-				} else {
-					game.setLeftState( false );
-					game.setRightState( false );
-				}
-				
-				if( lastYtilt == null ) lastYtilt = tilt.y;
-				if( Math.abs(lastYtilt - tilt.y) > 0.2 ) {
-					game.setUpState( true );
-					lastYtilt = tilt.y;
-				} else {
-					game.setUpState( false );
-				}
-				
-				game.setAccelerometerInfo( "tilt.y: " + tilt.y + ", <br />lastYtilt: " + lastYtilt );
-
-//				game.setAccelerometerInfo( 'X: ' + tilt.x + "Y: " + tilt.y + "Z: " +tilt.z );
-			},  
-			function(){ //failure  
-				alert('NEWFAGS CANT TRIFORCE');  
-			},  
-			{ //options  
-				frequency: 100  
-			});
-*/
 	
 }, false );
