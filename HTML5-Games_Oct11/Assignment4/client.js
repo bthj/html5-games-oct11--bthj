@@ -284,9 +284,6 @@ var GF = function() {
 				} else if( states.right ) {
 					thisPlayer.x = platformPosition.x - thisPlayer.width;
 				}
-//				if( navigator ) {
-//					navigator.notification.vibrate(250);
-//				}
 			}
 		} else if( thisPlayer.y < groundY && false == isJumping ) {
 			// let's make sure the player falls when going off the edge of a platform
@@ -321,11 +318,8 @@ var GF = function() {
 		
 		loop(mainLoop);
 		
-		if( wasMoving || playerIsMoving[playerId] ) {  // so all clients will stop animating the sprite
-			/*
-			 * sending here via socket doesn't seem to be asynchronous and affects the loop,
-			 * so propbably it's better to do this via setInterval()
-			 */
+		if( wasMoving || playerIsMoving[playerId] ) {  
+			// wasMoving so all clients will stop animating the sprite
 			sendMoves();
 		}
 	};
@@ -348,7 +342,7 @@ var GF = function() {
 				delete playerPositions[event.data.id];
 			} else if( ! playerPositions[event.data.id] ) {
 				createPlayer( event.data.id, {x: event.data.x, y: event.data.y} );
-				sendMoves();
+				sendMoves();  // so the new player will see us
 			}
 			if( playerPositions[event.data.id].x != event.data.x || 
 					playerPositions[event.data.id].y != event.data.y ) {
@@ -413,21 +407,6 @@ var GF = function() {
 	};
 	
 	
-	var setAccelerometerInfo = function( info ) {
-		accelerometerInfo.innerHTML = info;
-	};
-	
-	var setLeftState = function( state ) {
-		states.left = state;
-	};
-	var setRightState = function( state ) {
-		states.right = state;
-	};
-	var setUpState = function( state ) {
-		states.up = state;
-	}
-	
-
 	
 	var start = function( ) {
 		
@@ -445,10 +424,7 @@ var GF = function() {
 		fpsContainer = document.createElement('div');
 		document.body.appendChild(fpsContainer);
 */
-		accelerometerInfo = document.createElement('span');
-		document.body.appendChild(accelerometerInfo);
-
-		
+	
 		//create platform    
 		platform = document.body.appendChild(document.createElement('div'));    
 		platform.id = 'platform';    
@@ -497,6 +473,7 @@ var GF = function() {
 //		socket.onclose = bye;
 		
 		
+		
 		playerId = ~~(Math.random() * 87236584);
 		
 		createPlayer( playerId, {x: defaultPlayerPosition.x, y: defaultPlayerPosition.y} );
@@ -505,14 +482,6 @@ var GF = function() {
 			document.body.removeChild( loadingMessage );
 			sendMoves();
 		};
-		
-/*		
-		setInterval(function(){
-			if( playerIsMoving[playerId] ) {
-				sendMoves();
-			}
-		}, 1000 / 60 );
-*/
 		
 		
 		if( typeof(PhoneGap) != 'undefined' ) {
@@ -536,10 +505,10 @@ var GF = function() {
 					
 					if( lastYtilt == null ) lastYtilt = tilt.y;
 					if( Math.abs(lastYtilt - tilt.y) > 2.0 ) {
-						setUpState( true );
+						states.up = true;
 						lastYtilt = tilt.y;
 					} else {
-						setUpState( false );
+						states.up = false;
 					}
 					
 //					setAccelerometerInfo( "tilt.y: " + tilt.y + ", <br />lastYtilt: " + lastYtilt + ", <br />stepWeight: " + states.stepWeight );
@@ -558,11 +527,7 @@ var GF = function() {
 
 	//our GameFramework returns public API visible from outside scope  
 	return {
-		start : start,
-		setAccelerometerInfo : setAccelerometerInfo,
-		setLeftState : setLeftState,
-		setRightState : setRightState,
-		setUpState : setUpState
+		start : start
 	};
 };
 
