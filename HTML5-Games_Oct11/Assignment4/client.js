@@ -523,11 +523,11 @@ var GF = function() {
 					if( tilt.x > 1.0 ) {
 						states.left = true;
 						states.right = false;
-						states.stepWeight = 1; // Math.abs(tilt.x - 1.0);
+						states.stepWeight = tilt.x;
 					} else if( tilt.x < -1.0 ) {
 						states.right = true;
 						states.left = false;
-						states.stepWeight = 1; // (tilt.x + 1.0);
+						states.stepWeight = Math.abs(tilt.x);
 					} else {
 						states.left = false;
 						states.right = false;
