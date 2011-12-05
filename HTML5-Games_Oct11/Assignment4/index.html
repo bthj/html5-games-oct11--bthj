@@ -24,6 +24,11 @@
 		<script src="client.js"></script>
 	</head>
 	<body>
-		
+		<script type="text/javascript">
+			if( typeof(PhoneGap) == 'undefined' ) {
+				var game = new GF();
+				game.start();
+			}
+		</script>
 	</body>
 </html>
