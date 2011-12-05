@@ -307,9 +307,9 @@ var GF = function() {
 						} else if( onePlayer.x + onePlayer.width > anotherPlayer.x ) {
 							onePlayer.x = anotherPlayer.x - onePlayer.width - 1;
 						}
-//						if( navigator ) {
-//							navigator.notification.vibrate(250);
-//						}
+						if( typeof(PhoneGap) != 'undefined' ) {
+							navigator.notification.vibrate(500);
+						}
 					}
 				}
 			}
