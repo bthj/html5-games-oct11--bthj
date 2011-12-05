@@ -301,7 +301,7 @@ var GF = function() {
 				if( anotherId != oneId ) {
 					var anotherPlayer = playerPositions[anotherId];
 					
-					if( playerIsMoving[playerId] && checkCollision(onePlayer, anotherPlayer) ) {
+					if( playerIsMoving[oneId] && checkCollision(onePlayer, anotherPlayer) ) {
 						if( onePlayer.x >= anotherPlayer.x ) {
 							onePlayer.x = anotherPlayer.x + anotherPlayer.width + 1;
 						} else if( onePlayer.x + onePlayer.width > anotherPlayer.x ) {
