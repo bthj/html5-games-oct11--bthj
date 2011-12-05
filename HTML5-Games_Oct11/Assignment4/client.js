@@ -301,7 +301,7 @@ var GF = function() {
 				if( anotherId != oneId ) {
 					var anotherPlayer = playerPositions[anotherId];
 					
-					if( checkCollision(onePlayer, anotherPlayer) ) {
+					if( playerIsMoving[playerId] && checkCollision(onePlayer, anotherPlayer) ) {
 						if( onePlayer.x >= anotherPlayer.x ) {
 							onePlayer.x = anotherPlayer.x + anotherPlayer.width + 1;
 						} else if( onePlayer.x + onePlayer.width > anotherPlayer.x ) {
@@ -523,11 +523,11 @@ var GF = function() {
 					if( tilt.x > 1.0 ) {
 						states.left = true;
 						states.right = false;
-						states.stepWeight = tilt.x * 0.5;
+						states.stepWeight = tilt.x / 2;
 					} else if( tilt.x < -1.0 ) {
 						states.right = true;
 						states.left = false;
-						states.stepWeight = Math.abs(tilt.x * 0.5);
+						states.stepWeight = Math.abs(tilt.x / 2);
 					} else {
 						states.left = false;
 						states.right = false;
