@@ -308,7 +308,7 @@ var GF = function() {
 							onePlayer.x = anotherPlayer.x - onePlayer.width - 1;
 						}
 						if( typeof(PhoneGap) != 'undefined' ) {
-							navigator.notification.vibrate(500);
+							navigator.notification.vibrate(1000);
 						}
 					}
 				}
